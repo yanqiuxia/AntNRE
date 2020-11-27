@@ -34,11 +34,21 @@ class EntSpanFeatExtractor(nn.Module):
         self.use_cuda = use_cuda
 
     def forward(self, batch: Dict[str, Any]) -> (Dict[str, Any], torch.FloatTensor):
+        '''
+
+        ent_ids_batch:
+        "seq_feats": torch.FloatTensor (new_batch_size, sequence_size, hidden_size)
+            new_batch_size = the number of entity spans of batch
+        "all_ent_ids": torch.LongTensor (new_batch_size, 1, 2)
+            one span, [start, end]
+        "all_ent_ids_label": torch.LongTensor (new_batch_size)
+
+        '''
         ent_ids_batch = self.create_ent_ids_batch(batch)
         ent_ids_span_feats = self.ent_ids_span_extractor(
             ent_ids_batch['seq_feats'],
-            ent_ids_batch['all_ent_ids'])
-        ent_ids_span_feats = self.ent2hidden(ent_ids_span_feats.squeeze(1))
+            ent_ids_batch['all_ent_ids']) #(new_batch_size, 1, cnn_hidden_size)
+        ent_ids_span_feats = self.ent2hidden(ent_ids_span_feats.squeeze(1)) #(new_batch_size, 1, hidden_size)
         #  print(ent_ids_span_feats.size())
         return ent_ids_batch, ent_ids_span_feats
 

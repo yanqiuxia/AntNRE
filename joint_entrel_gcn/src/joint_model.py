@@ -63,17 +63,17 @@ class JointModel(nn.Module):
         seq_tags = batch['ent_span_labels']
         seq_lens = batch['seq_lens']
 
-        encoder_inputs = self.word_encoder(token_inputs, char_inputs)
-        seq_feats = self.seq2seq_encoder(encoder_inputs, seq_lens).contiguous()
-        ent_span_outputs = self.ent_span_decoder(seq_feats, seq_tags)
+        encoder_inputs = self.word_encoder(token_inputs, char_inputs) #(batch_size, sent_size, word_encoder_size)
+        seq_feats = self.seq2seq_encoder(encoder_inputs, seq_lens).contiguous()#(batch_size,sequence_size,hidden_size)
+        ent_span_outputs = self.ent_span_decoder(seq_feats, seq_tags)#[loss, (batch_size, seq_size)]
 
-        ent_span_pred = ent_span_outputs['predict']
-
+        ent_span_pred = ent_span_outputs['predict'] #[(batch_size, seq_size)]
+        #随机选取真实和预测的标签进行训练，由sch_k系数控制
         if self.training and batch['i_epoch'] is not None:
             sch_p = self.sch_k / (self.sch_k + np.exp(batch['i_epoch'] / self.sch_k))        
             ent_span_pred = [gold if np.random.random() < sch_p else pred
                              for pred, gold in zip(ent_span_pred, batch['ent_span_labels'])]
-            ent_span_pred = torch.stack(ent_span_pred)
+            ent_span_pred = torch.stack(ent_span_pred) #[(batch_size, seq_size)]
 
         all_ent_ids, all_ent_ids_label = self.ent_span_generator.forward(
             batch, ent_span_pred, self.training)
@@ -111,6 +111,7 @@ class JointModel(nn.Module):
 
         candi_rel_num = sum([len(e) for e in all_candi_rels])
 
+        # ent_ids_span_feats:(new_batch_size, 1, hidden_size)
         ent_ids_batch, ent_ids_span_feats = self.ent_span_feat_extractor(batch)
         if candi_rel_num > 0:
             rel_batch = self.rel_feat_extractor(batch, ent_ids_span_feats)

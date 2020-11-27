@@ -30,8 +30,8 @@ class SeqSoftmaxDecoder(nn.Module):
 
         assert hidden_size == self.hidden_size
         
-        batchseq_feats = batch_seq_feats.view(-1, hidden_size)
-        batchseq_feats = self.hidden2tag(batchseq_feats)           
+        batchseq_feats = batch_seq_feats.view(-1, hidden_size)# (batch_size x seq_size, hidden_size)
+        batchseq_feats = self.hidden2tag(batchseq_feats)  # (batch_size x seq_size, tag_size)
         batchseq_log_probs = F.log_softmax(batchseq_feats, dim=1)  # (batch_size x seq_size, tag_size)
         
         no_pad_ave_loss = self.loss_fn(batchseq_log_probs, batch_seq_tags)

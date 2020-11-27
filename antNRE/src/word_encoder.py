@@ -51,13 +51,13 @@ class WordCharEncoder(nn.Module):
         batch_sent_vecs : ``torch.Tensor``, required
             (batch_size, sent_size, -1)
         """
-        batch_sent_vecs = self.word_embeddings(batch_sent_input)
+        batch_sent_vecs = self.word_embeddings(batch_sent_input)  #(batch_size, sent_size,embedding_size)
         batch_sent_vecs = self.dropout(batch_sent_vecs)
         if batch_sent_char_input is not None:
             batch_sent_char_vecs = []
             for i in range(0, len(batch_sent_char_input), self.char_batch_size):
                 char_batch = batch_sent_char_input[i: i + self.char_batch_size]
-                batch_sent_char_vecs.append(self.char_embeddings(char_batch))
+                batch_sent_char_vecs.append(self.char_embeddings(char_batch)) # (batch_size, sent_size, out_channels*kernel_sizes_len)
             batch_sent_char_vecs = torch.cat(batch_sent_char_vecs, 0)
             embedding_list = [batch_sent_char_vecs, batch_sent_vecs]
             if hasattr(self, 'aux_word_embeddings'):

@@ -47,10 +47,10 @@ class CharCNN(nn.Module):
         batchsent_char_emb = batchsent_char_emb.unsqueeze(1)                    # (batch_size x sent_size, 1, char_seq_size, char_dims)
         
         batchsent_char_conv = [F.relu(conv(batchsent_char_emb)).squeeze(3)
-                               for conv in self.convs]
+                               for conv in self.convs] # (kernel_sizes_len, batch_size x sent_size, out_channels, char_seq_size-k+1)
         batchsent_pool = [F.max_pool1d(char_conv, char_conv.size(2)).squeeze(2) 
-                          for char_conv in batchsent_char_conv]
-        batchsent_pool = torch.cat(batchsent_pool, 1)
+                          for char_conv in batchsent_char_conv] # (kernel_sizes_len, batch_size x sent_size, out_channels)
+        batchsent_pool = torch.cat(batchsent_pool, 1) # (batch_size x sent_size, out_channels*kernel_sizes_len)
         batchsent_pool = self.dropout(batchsent_pool)
-        batch_sent_char_vecs = batchsent_pool.view(batch_size, sent_size, -1)
+        batch_sent_char_vecs = batchsent_pool.view(batch_size, sent_size, -1) # (batch_size, sent_size, out_channels*kernel_sizes_len)
         return batch_sent_char_vecs

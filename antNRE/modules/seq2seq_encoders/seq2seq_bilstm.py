@@ -50,6 +50,7 @@ class BiLSTMEncoder(Seq2SeqEncoder):
 
         seq_lens: shape
             (batch_size)
+        return (batch_size,sequence_size,hidden_size)
         """
         batch_size, sequence_size, input_size = inputs.size()
 

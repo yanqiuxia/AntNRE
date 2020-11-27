@@ -55,6 +55,12 @@ class RelFeatExtractor(nn.Module):
     def cache_all_span_feats(self,
                              batch: Dict[str, Any],
                              ent_ids_span_feats: torch.FloatTensor) -> List[Dict[Tuple, torch.FloatTensor]]:
+        '''
+
+        :param batch: all_ent_ids:# (batch_size, ent_span_num, 2)
+        :param ent_ids_span_feats: [batch_size,1,hidden_size]
+        :return:
+        '''
         cache_ent_span_feats = self.cache_span_feats(batch['all_ent_ids'], ent_ids_span_feats)
         context_spans = self.get_context_spans(batch['all_candi_rels'], batch['seq_lens'])
 

@@ -67,7 +67,7 @@ print("Total items in dev corpus: %s" % len(dev_corpus))
 print("Total items in test corpus: %s" % len(test_corpus))
 print("Max sentence length: %s" % max_sent_len)
 
-namespace_counter = myutil.create_counter(train_corpus + dev_corpus + test_corpus)
+namespace_counter = myutil.create_counter(train_corpus + dev_corpus + test_corpus) #Dict[str, Dict[str, int]]
 for namespace in namespace_counter.keys():
     print(namespace, len(namespace_counter[namespace]))
 

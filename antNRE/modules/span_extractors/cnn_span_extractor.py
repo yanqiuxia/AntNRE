@@ -47,6 +47,13 @@ class CnnSpanExtractor(SpanExtractor):
                 sequence_tensor: torch.FloatTensor,
                 span_indices: torch.LongTensor,
                 span_indices_mask: torch.LongTensor = None) -> torch.FloatTensor:
+        '''
+
+        :param sequence_tensor: (batch_size,seq_size,hidden_size)
+        :param span_indices: (batch_size, 1, 2)
+        :param span_indices_mask:
+        :return:
+        '''
         # both of shape (batch_size, num_spans, 1)
         span_starts, span_ends = span_indices.split(1, dim=-1)
 
@@ -95,18 +102,23 @@ class CnnSpanExtractor(SpanExtractor):
         span_mask = span_mask.view(batch_size * num_spans, max_batch_span_width)
         cnn_text_embeddings = self.cnn(view_text_embeddings, span_mask)
         cnn_text_embeddings = cnn_text_embeddings.view(batch_size, num_spans, self._output_dim)
-        return cnn_text_embeddings
+        return cnn_text_embeddings #(batch_size, num_spans, output_dim)
+import numpy as np
 
-#  torch.manual_seed(1)
-#  sequence_tensor = torch.randn(2, 1, 5).cuda()
-#  span_indices = torch.LongTensor([[[0, 0]], [[0, 0]]]).cuda()
-#  extractor = CnnSpanExtractor(5, 
-                             #  5,
-                             #  (2, 3)).cuda()
-#  print(extractor(sequence_tensor, span_indices))
-#  print(extractor(sequence_tensor, span_indices).size())
-#  print("====")
-#  print((sequence_tensor[0][0] + sequence_tensor[0][1]) )
+if __name__ == '__main__':
 
-#  print((sequence_tensor[1][1] + sequence_tensor[1][2] + sequence_tensor[1][3]) )
+     torch.manual_seed(1)
+     inputs = np.random.randint(0, 10, size=(2, 3, 5))
+     sequence_tensor = torch.tensor(inputs, device='cuda')
+     # # sequence_tensor = torch.randn(2, 1, 5).cuda()
+     # span_indices = torch.LongTensor([[[0, 0]], [[0, 0]]]).cuda()
+     # extractor = CnnSpanExtractor(5,
+     #                              5,
+     #                              (2, 3)).cuda()
+     # print(extractor(sequence_tensor, span_indices))
+     # print(extractor(sequence_tensor, span_indices).size())
+     # print("====")
+     # print((sequence_tensor[0][0] + sequence_tensor[0][1]) )
+     #
+     # print((sequence_tensor[1][1] + sequence_tensor[1][2] + sequence_tensor[1][3]) )
 

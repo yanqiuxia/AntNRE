@@ -92,7 +92,7 @@ class CnnEncoder(Seq2VecEncoder):
         # convolution layers expect input of shape `(batch_size, in_channels, sequence_length)`,
         # where the conv layer `in_channels` is our `embedding_dim`.  We thus need to transpose the
         # tensor first.
-        tokens = torch.transpose(tokens, 1, 2)
+        tokens = torch.transpose(tokens, 1, 2) #(batch_size, embedding_dim, num_tokens)
         # Each convolution layer returns output of size `(batch_size, num_filters, pool_length)`,
         # where `pool_length = num_tokens - ngram_size + 1`.  We then do an activation function,
         # then do max pooling over each filter for the whole input sequence.  Because our max
