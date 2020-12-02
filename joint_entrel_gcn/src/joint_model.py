@@ -59,22 +59,24 @@ class JointModel(nn.Module):
 
     def forward(self, batch: Dict[str, Any]) -> Dict:
         token_inputs = batch['tokens']
-        char_inputs = batch['token_chars']
+        # char_inputs = batch['token_chars']
         seq_tags = batch['ent_span_labels']
         seq_lens = batch['seq_lens']
 
-        encoder_inputs = self.word_encoder(token_inputs, char_inputs) #(batch_size, sent_size, word_encoder_size)
+        #1---提取wordembedding,采用bilstm编码,使用softmax输出ent_span_labels
+        encoder_inputs = self.word_encoder(token_inputs) #(batch_size, sent_size, word_encoder_size)
         seq_feats = self.seq2seq_encoder(encoder_inputs, seq_lens).contiguous()#(batch_size,sequence_size,hidden_size)
         ent_span_outputs = self.ent_span_decoder(seq_feats, seq_tags)#[loss, (batch_size, seq_size)]
 
         ent_span_pred = ent_span_outputs['predict'] #[(batch_size, seq_size)]
-        #随机选取真实和预测的标签进行训练，由sch_k系数控制
+        #2---随机选取真实和预测的标签进行训练，由sch_k系数控制，实验的时候使用真实标签
         if self.training and batch['i_epoch'] is not None:
-            sch_p = self.sch_k / (self.sch_k + np.exp(batch['i_epoch'] / self.sch_k))        
+            # sch_p = self.sch_k / (self.sch_k + np.exp(batch['i_epoch'] / self.sch_k))
+            sch_p = 1.0
             ent_span_pred = [gold if np.random.random() < sch_p else pred
                              for pred, gold in zip(ent_span_pred, batch['ent_span_labels'])]
             ent_span_pred = torch.stack(ent_span_pred) #[(batch_size, seq_size)]
-
+        #3---生成ent_ids, ent_ids_label。ent_ids由span组成，与batch有点不一样，end就是当前字符结束位置， ent_ids_label由实体标签id组成。
         all_ent_ids, all_ent_ids_label = self.ent_span_generator.forward(
             batch, ent_span_pred, self.training)
         batch['all_ent_ids'] = all_ent_ids  # batch_size, ent_span_num, 2
@@ -103,7 +105,7 @@ class JointModel(nn.Module):
             outputs['all_bin_rel_pred'] = [[] for _ in range(batch_size)]
             outputs['all_candi_rels'] = [[] for _ in range(batch_size)]
             return outputs
-
+        #4---获取所有候选关系,candi_rels由实体1和实体2的span组成， rel_labels为关系标签id
         all_candi_rels, all_rel_labels = self.generate_all_candidates(batch)
         batch['all_candi_rels'] = all_candi_rels
         batch['all_rel_labels'] = all_rel_labels
@@ -111,9 +113,11 @@ class JointModel(nn.Module):
 
         candi_rel_num = sum([len(e) for e in all_candi_rels])
 
-        # ent_ids_span_feats:(new_batch_size, 1, hidden_size)
+        #5---实体特征抽取，采用卷积提取span特征
+        # ent_ids_span_feats:(ent_ids_num, hidden_size)
         ent_ids_batch, ent_ids_span_feats = self.ent_span_feat_extractor(batch)
         if candi_rel_num > 0:
+            #6---关系特征抽取，采用卷积提取实体1,实体2,以及上下文5部分的特征
             rel_batch = self.rel_feat_extractor(batch, ent_ids_span_feats)
             assert candi_rel_num == rel_batch['inputs'].size(0)
             rel_batch['all_bin_rel_labels'] = (rel_batch['all_rel_labels'] != self.vocab.get_token_index("None", "rel_labels")).long()
@@ -123,7 +127,7 @@ class JointModel(nn.Module):
         else:
             rel_batch = None
             bin_rel_probs = None
-
+        #8---实体和关系输入gcn，提取gcn特征
         all_ent_gcn_feats, all_rel_gcn_feats = self.gcn_extractor(
             batch, ent_ids_span_feats, rel_batch, bin_rel_probs)
 
@@ -150,15 +154,15 @@ class JointModel(nn.Module):
             outputs['all_candi_rels'] = [[] for _ in range(batch_size)]
             return outputs
 
-
+        #9--利用实体特征输出提取实体节点
         ent_ids_outputs = self.ent_ids_decoder(all_ent_feats, 
                                                ent_ids_batch['all_ent_ids_label'])
         all_ent_pred = self.create_all_ent_pred(batch, ent_ids_outputs)
 
         outputs['ent_ids_loss'] = ent_ids_outputs['loss']
         outputs['all_ent_pred'] = all_ent_pred
-    
 
+        # 10--利用关系特征输出提取关系节点
         all_rel_feats = torch.cat([rel_batch['inputs'], all_rel_gcn_feats], 1)
         rel_outputs = self.rel_decoder(all_rel_feats,
                                        rel_batch['all_rel_labels'])
