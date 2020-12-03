@@ -47,7 +47,7 @@ class GCNExtractor(nn.Module):
             if cur_ent_ids_len == 0:
                 assert cur_candi_rels_len == 0
                 continue
-            ent_inputs =  ent_feats[i_ent: i_ent + cur_ent_ids_len]
+            ent_inputs = ent_feats[i_ent: i_ent + cur_ent_ids_len]
             if cur_candi_rels_len == 0:
                 graph_inputs = ent_inputs
                 #  adj = np.ones((cur_ent_ids_len, cur_ent_ids_len))

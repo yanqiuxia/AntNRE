@@ -79,8 +79,8 @@ class JointModel(nn.Module):
         #3---生成ent_ids, ent_ids_label。ent_ids由span组成，与batch有点不一样，end就是当前字符结束位置， ent_ids_label由实体标签id组成。
         all_ent_ids, all_ent_ids_label = self.ent_span_generator.forward(
             batch, ent_span_pred, self.training)
-        batch['all_ent_ids'] = all_ent_ids  # batch_size, ent_span_num, 2
-        batch['all_ent_ids_label'] = all_ent_ids_label # batch_size, ent_span_num, 1
+        batch['all_ent_ids'] = all_ent_ids  # (batch_size, ent_span_num, 2)
+        batch['all_ent_ids_label'] = all_ent_ids_label # (batch_size, ent_span_num, 1)
         batch['seq_feats'] = seq_feats
 
         outputs = {}
@@ -157,6 +157,7 @@ class JointModel(nn.Module):
         #9--利用实体特征输出提取实体节点
         ent_ids_outputs = self.ent_ids_decoder(all_ent_feats, 
                                                ent_ids_batch['all_ent_ids_label'])
+        #9.1---生成实体预测的span以及span的标签
         all_ent_pred = self.create_all_ent_pred(batch, ent_ids_outputs)
 
         outputs['ent_ids_loss'] = ent_ids_outputs['loss']
@@ -168,7 +169,7 @@ class JointModel(nn.Module):
                                        rel_batch['all_rel_labels'])
         outputs['rel_loss'] = rel_outputs['loss']
 
-        #  all_rel_pred = self.create_all_rel_pred(all_candi_rels, rel_outputs['predict'])
+        #10.1---生成所有关系，实体1和实体2是否有关系，以及所预测的关系标签
         all_candi_rels, all_rel_pred, all_bin_rel_pred = self.create_all_rel_pred(
             all_candi_rels, batch, ent_ids_outputs, rel_outputs, bin_rel_outputs)
 
